@@ -18,6 +18,10 @@ describe('subtotal', () => {
     expect(() => subtotal([{ price: 10, quantity: 0 }])).toThrow();
   });
 
+  it('throws when quantity is negative', () => {
+    expect(() => subtotal([{ price: 10, quantity: -1 }])).toThrow();
+  });
+
   it('throws when price is negative', () => {
     expect(() => subtotal([{ price: -1, quantity: 1 }])).toThrow();
   });
@@ -56,12 +60,34 @@ describe('computeTotal', () => {
   });
 
   it('applies valid promo code', () => {
-    const result = computeTotal([{ price: 100, quantity: 1 }], { promoCode: 'BIENVENUE10' });
+    const result = computeTotal([{ price: 100, quantity: 1 }], {
+      promoCode: 'BIENVENUE10',
+    });
 
     expect(result.discount).toBeCloseTo(10, 2);
   });
 
+  it('computes 20 percent VAT from taxable amount', () => {
+    const result = computeTotal([{ price: 100, quantity: 1 }]);
+
+    expect(result.vat).toBe(20);
+  });
+
+  it('returns 0 total for an empty cart', () => {
+    expect(computeTotal([]).total).toBe(0);
+  });
+
+  it('never returns a negative total', () => {
+    const result = computeTotal([{ price: 100, quantity: 1 }], {
+      vatRate: -10,
+    });
+
+    expect(result.total).toBe(0);
+  });
+
   it('throws on invalid promo code', () => {
-    expect(() => computeTotal([{ price: 10, quantity: 1 }], { promoCode: 'XXX' })).toThrow();
+    expect(() =>
+      computeTotal([{ price: 10, quantity: 1 }], { promoCode: 'XXX' }),
+    ).toThrow();
   });
 });
