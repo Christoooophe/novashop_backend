@@ -12,6 +12,7 @@ export const VAT_RATE = 0.2;
 
 const PROMOS: Record<string, number> = {
   BIENVENUE10: 0.1,
+  MEGA50: 0.5,
 };
 
 function assertItem(item: CartItem) {
@@ -72,14 +73,16 @@ export function shipping(subtotalValue: number) {
 export function computeTotal(items: CartItem[] | undefined, options: ComputeTotalOptions = {}) {
   const subtotalValue = subtotal(items);
   const discount = round2(tierDiscount(subtotalValue) + promoDiscount(subtotalValue, options.promoCode));
-  const taxable = Math.max(0, subtotalValue - discount);
+  const discountLimit = 0.3 * subtotalValue;
+  const discountFinal = round2(Math.min(discount, discountLimit));
+  const taxable = Math.max(0, subtotalValue - discountFinal);
   const vat = round2(taxable * (options.vatRate ?? VAT_RATE));
   const shippingValue = shipping(subtotalValue);
   const total = Math.max(0, round2(taxable + vat + shippingValue));
 
   return {
     subtotal: round2(subtotalValue),
-    discount,
+    discount: discountFinal,
     vat,
     shipping: shippingValue,
     total,

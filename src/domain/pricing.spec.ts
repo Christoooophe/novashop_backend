@@ -67,6 +67,25 @@ describe('computeTotal', () => {
     expect(result.discount).toBeCloseTo(10, 2);
   });
 
+  it('does not cap discount when it stays below 30 percent of subtotal', () => {
+    const subtotalValue = 100;
+    const result = computeTotal([{ price: subtotalValue, quantity: 1 }], {
+      promoCode: 'BIENVENUE10',
+    });
+
+    expect(result.discount).toBeCloseTo(10, 2);
+    expect(result.discount).toBeLessThan(0.3 * subtotalValue);
+  });
+
+  it('caps discount at 30 percent of subtotal', () => {
+    const subtotalValue = 200;
+    const result = computeTotal([{ price: subtotalValue, quantity: 1 }], {
+      promoCode: 'MEGA50',
+    });
+
+    expect(result.discount).toBeCloseTo(0.3 * subtotalValue, 2);
+  });
+
   it('computes 20 percent VAT from taxable amount', () => {
     const result = computeTotal([{ price: 100, quantity: 1 }]);
 
