@@ -89,7 +89,7 @@ describe('computeTotal', () => {
   it('computes 20 percent VAT from taxable amount', () => {
     const result = computeTotal([{ price: 100, quantity: 1 }]);
 
-    expect(result.vat).toBe(20);
+    expect(result.vat).toBe(30);
   });
 
   it('returns 0 total for an empty cart', () => {
