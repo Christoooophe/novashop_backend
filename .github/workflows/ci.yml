@@ -85,6 +85,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   deploy-staging:
+    needs:
+      - test
+      - sca
+      - trivy
+      - gitleaks
+      - sonar
     runs-on: ubuntu-latest
     steps:
       - run: echo "deploy staging ok"
