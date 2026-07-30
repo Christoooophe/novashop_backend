@@ -36,3 +36,27 @@ jobs:
       - name: Summary in run
         if: always()
         run: npm audit --omit=dev | tee -a "$GITHUB_STEP_SUMMARY"
+
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t novashop-backend:ci .
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: novashop-backend:ci
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+      - name: Upload Trivy results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
