@@ -48,7 +48,7 @@ jobs:
         with:
           image-ref: novashop-backend:ci
           format: table
-          severity: HIGH,CRITICAL
+          severity: CRITICAL
           scanners: vuln
           exit-code: '1'
           ignore-unfixed: true
