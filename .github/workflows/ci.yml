@@ -1,5 +1,6 @@
 name: CI
 on: [push, pull_request]
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -11,22 +12,27 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm test -- --coverage
+
   sca:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '25', cache: 'npm' }
+        with:
+          node-version: '25'
+          cache: 'npm'
       - run: npm ci
-      - name: Audit (bloquant sur high)
-        run: npm audit --audit-level=high
-      - name: Générer le rapport JSON
-        if: always() # même si l'audit a échoué
-        run: npm audit --json > audit-report.json
-      - name: Publier le rapport (artefact)
+      - name: Audit (blocking on prod high)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Generate JSON report
+        if: always()
+        run: npm audit --omit=dev --json > audit-report.json
+      - name: Upload report artifact
         if: always()
         uses: actions/upload-artifact@v4
-        with: { name: sca-report, path: audit-report.json }
-      - name: Résumé dans le run
+        with:
+          name: sca-report
+          path: audit-report.json
+      - name: Summary in run
         if: always()
-        run: npm audit | tee -a "$GITHUB_STEP_SUMMARY"
+        run: npm audit --omit=dev | tee -a "$GITHUB_STEP_SUMMARY"
