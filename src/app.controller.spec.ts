@@ -1,22 +1,42 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DbService } from './db.service';
 
 describe('AppController', () => {
   let appController: AppController;
+  let dbService: { ping: jest.Mock };
 
   beforeEach(async () => {
+    dbService = {
+      ping: jest.fn().mockResolvedValue(undefined),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        AppService,
+        {
+          provide: DbService,
+          useValue: dbService,
+        },
+      ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
   });
 
-  it('returns health status', () => {
-    expect(appController.getHealth()).toEqual({ status: 'ok' });
+  it('returns health status', async () => {
+    await expect(appController.getHealth()).resolves.toMatchObject({
+      status: 'up',
+    });
+  });
+
+  it('returns service unavailable when db is down', async () => {
+    dbService.ping.mockRejectedValueOnce(new Error('connect ECONNREFUSED'));
+
+    await expect(appController.getHealth()).rejects.toThrow(ServiceUnavailableException);
   });
 
   it('returns products', () => {
