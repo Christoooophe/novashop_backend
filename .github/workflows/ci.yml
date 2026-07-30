@@ -39,9 +39,6 @@ jobs:
 
   trivy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v4
       - name: Build image
@@ -50,13 +47,8 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: novashop-backend:ci
-          format: sarif
-          output: trivy-results.sarif
+          format: table
           severity: HIGH,CRITICAL
+          scanners: vuln
           exit-code: '1'
           ignore-unfixed: true
-      - name: Upload Trivy results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-results.sarif
