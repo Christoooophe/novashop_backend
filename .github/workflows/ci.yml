@@ -92,7 +92,28 @@ jobs:
       - gitleaks
       - sonar
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push immutable image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker build -t ghcr.io/christoooophe/novashop_backend:${{ github.sha }} .
+          docker push ghcr.io/christoooophe/novashop_backend:${{ github.sha }}
+      - name: Update staging tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag ghcr.io/christoooophe/novashop_backend:${{ github.sha }} ghcr.io/christoooophe/novashop_backend:staging
+          docker push ghcr.io/christoooophe/novashop_backend:staging
       - run: echo "deploy staging ok"
 
   smoke:
