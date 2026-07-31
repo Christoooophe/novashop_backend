@@ -1,5 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { products } from './data/products';
+import { DbService } from './db.service';
 import { CartItem, computeTotal } from './domain/pricing';
 
 export interface CartTotalRequest {
@@ -9,8 +15,26 @@ export interface CartTotalRequest {
 
 @Injectable()
 export class AppService {
-  getHealth() {
-    return { status: 'ok' };
+  constructor(private readonly dbService: DbService) {}
+
+  async getHealth() {
+    const time = new Date().toISOString();
+
+    try {
+      await this.dbService.ping();
+
+      return {
+        status: 'up',
+        time,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Database unavailable';
+      throw new ServiceUnavailableException({
+        status: 'down',
+        error: message,
+        time,
+      });
+    }
   }
 
   getProducts() {

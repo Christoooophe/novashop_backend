@@ -83,3 +83,64 @@ jobs:
       - uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  deploy-staging:
+    needs:
+      - test
+      - sca
+      - trivy
+      - gitleaks
+      - sonar
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploy staging ok"
+
+  smoke:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: novashop
+          POSTGRES_PASSWORD: novashop
+          POSTGRES_DB: novashop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U novashop -d novashop"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '25'
+          cache: 'npm'
+      - run: npm ci
+      - name: Start app
+        env:
+          PORT: 5000
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: novashop
+          PGPASSWORD: novashop
+          PGDATABASE: novashop
+        run: |
+          npm run build
+          nohup npm run start:prod > smoke-app.log 2>&1 &
+      - name: Smoke test staging
+        env:
+          BASE_URL: http://localhost:5000
+        run: bash scripts/smoke.sh
+      - name: App logs
+        if: always()
+        run: cat smoke-app.log
+
+  deploy-prod:
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploy prod ok"
